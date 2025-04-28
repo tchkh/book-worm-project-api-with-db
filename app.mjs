@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import connectionPool from './utils/db.mjs'
+import validatePostData from './middleware/postValidation.mjs'
 
 const app = express()
 const port = process.env.PORT || 4001
@@ -114,23 +115,6 @@ app.get('/posts', async (req, res) => {
   }
 })
 
-app.post('/posts', async (req, res) => {
-  try {
-    const {
-      body: { title, image, category_id, description, content, status_id },
-    } = req
-
-    const createPost = await connectionPool.query({
-      text: 'INSERT INTO posts (title, image, category_id, description, content, status_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      values: [title, image, category_id, description, content, status_id],
-    })
-
-    return res.status(201).json({ message: 'Created post successfully' })
-  } catch (error) {
-    return res.status(500).json({ error: error.message })
-  }
-})
-
 app.get('/posts/:postId', async (req, res) => {
   // ลอจิกในอ่านข้อมูลโพสต์ด้วย Id ในระบบ
   // 1) Access ตัว Endpoint Parameter ด้วย req.params
@@ -167,7 +151,24 @@ app.get('/posts/:postId', async (req, res) => {
   }
 })
 
-app.put('/posts/:postId', async (req, res) => {
+app.post('/posts', validatePostData, async (req, res) => {
+  try {
+    const {
+      body: { title, image, category_id, description, content, status_id },
+    } = req
+
+    const createPost = await connectionPool.query({
+      text: 'INSERT INTO posts (title, image, category_id, description, content, status_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      values: [title, image, category_id, description, content, status_id],
+    })
+
+    return res.status(201).json({ message: 'Created post successfully' })
+  } catch (error) {
+    return res.status(500).json({ error: error.message })
+  }
+})
+
+app.put('/posts/:postId', validatePostData, async (req, res) => {
   // ลอจิกในการแก้ไขข้อมูลโพสต์ด้วย Id ในระบบ
 
   // 1) Access ตัว Endpoint Parameter ด้วย req.params
